@@ -1,0 +1,22 @@
+Your Conversation Log:
+You: hi
+AI: Hi there! How's your day going? 😊 
+
+Is there anything you'd like to chat about or need help with?
+
+You: my name is yash
+AI: Hi Yash! It’s great to meet you. 😊 
+
+It's nice to hear from you. What’s on your mind today?
+
+You: what is 2+2
+AI: 2 + 2 = 4 
+
+😊
+
+You: what is my name?
+AI: That's Yash! 😊 
+
+Is there anything you’d like to know or talk about?
+
+End of Conversation
