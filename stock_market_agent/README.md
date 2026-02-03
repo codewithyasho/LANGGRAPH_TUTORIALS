@@ -36,7 +36,7 @@ This Stock Market Trading Agent is an intelligent conversational AI system that 
 
 ## 🏗️ Architecture
 
-![Graph Architecture](Agents/Graph1.png)
+![Graph Architecture](Graph1.png)
 
 ### State Management
 
