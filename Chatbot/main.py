@@ -4,7 +4,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
-from langchain_ollama import ChatOllama
+from langchain_groq import ChatGroq
 from typing import TypedDict, Annotated
 from langchain.tools import tool
 from dotenv import load_dotenv
@@ -31,11 +31,22 @@ def get_date_time() -> str:
     return now.strftime("%Y-%m-%d %H:%M:%S")
 
 
-tools = [search_web, get_date_time]
+@tool()
+def calculator_tool(expression: str) -> str:
+    """This tool is useful for performing calculations."""
+    try:
+        result = eval(expression)
+        return str(result)
+
+    except Exception as e:
+        return f"Error in calculation: {str(e)}"
 
 
-llm = ChatOllama(model="deepseek-v3.1:671b-cloud",
-                 temperature=0.8).bind_tools(tools)
+tools = [search_web, get_date_time, calculator_tool]
+
+
+llm = ChatGroq(model="openai/gpt-oss-120b",
+               temperature=0.8).bind_tools(tools)
 
 
 class ChatState(TypedDict):

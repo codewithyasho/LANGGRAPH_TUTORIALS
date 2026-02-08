@@ -1,5 +1,4 @@
 from langchain_core.messages import BaseMessage, AIMessage, HumanMessage
-from langchain_core.messages import HumanMessage
 from main import chatbot, get_threads_in_db
 import streamlit as st
 import uuid
@@ -27,6 +26,23 @@ def load_chat(thread_id):
     return chatbot.get_state(config={'configurable': {'thread_id': thread_id}}).values["messages"]
 
 
+def get_thread_preview(thread_id):
+    """Generate a user-friendly preview for a chat thread"""
+    try:
+        messages = load_chat(thread_id)
+        if messages:
+            # Get the first user message
+            for msg in messages:
+                if isinstance(msg, HumanMessage):
+                    preview = msg.content[:40]  # First 40 characters
+                    if len(msg.content) > 40:
+                        preview += "..."
+                    return preview
+        return f"Chat {str(thread_id)[:8]}..."
+    except:
+        return f"Chat {str(thread_id)[:8]}..."
+
+
 if 'message_history' not in st.session_state:
     st.session_state['message_history'] = []
 
@@ -47,8 +63,10 @@ if st.sidebar.button("New Chat"):
 
 st.sidebar.header("Your Chats")
 
+# show most recent chats first
 for thread_id in st.session_state['chat_threads'][::-1]:
-    if st.sidebar.button(str(thread_id)):
+    preview = get_thread_preview(thread_id)
+    if st.sidebar.button(preview, key=str(thread_id)):
         st.session_state['thread_id'] = thread_id
         messages = load_chat(thread_id)
 
@@ -93,11 +111,17 @@ if user_input:
                 config=CONFIG,
                 stream_mode="messages"
             ):
-                if isinstance(chunk, AIMessage):
-                    # only yeild AIMessage chunks, ignore tool chunks
-                    yield chunk.content
+                # stream_mode="messages" returns (message, metadata) tuples
+                if isinstance(chunk, tuple):
+                    message = chunk[0]
+                else:
+                    message = chunk
 
-        ai_msg = st.write(ai_stream_only())
+                if isinstance(message, AIMessage) and message.content:
+                    # only yield AIMessage chunks, ignore tool chunks
+                    yield message.content
+
+        ai_msg = st.write_stream(ai_stream_only())
 
     st.session_state['message_history'].append(
         {'role': 'assistant', 'content': ai_msg}
