@@ -1,15 +1,41 @@
-from langgraph.graph import StateGraph, START, END
-from typing import TypedDict, Annotated
-from langchain_core.messages import BaseMessage
-from langchain_ollama import ChatOllama
+from langchain_core.messages import BaseMessage, AIMessage, HumanMessage
+from langchain_community.tools import DuckDuckGoSearchRun
+from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
+from langchain_ollama import ChatOllama
+from typing import TypedDict, Annotated
+from langchain.tools import tool
 from dotenv import load_dotenv
+from datetime import datetime
+
 import sqlite3
 
 load_dotenv()
 
-llm = ChatOllama(model="deepseek-v3.1:671b-cloud", temperature=0.8)
+
+# TOOLS
+@tool()
+def search_web(query: str) -> str:
+    """This tool is useful for searching the web for latest and up-to-date information."""
+    search = DuckDuckGoSearchRun()
+    result = search.run(query)
+    return result
+
+
+@tool()
+def get_date_time() -> str:
+    """This tool is useful for getting the current date and time."""
+    now = datetime.now()
+    return now.strftime("%Y-%m-%d %H:%M:%S")
+
+
+tools = [search_web, get_date_time]
+
+
+llm = ChatOllama(model="deepseek-v3.1:671b-cloud",
+                 temperature=0.8).bind_tools(tools)
 
 
 class ChatState(TypedDict):
@@ -29,7 +55,16 @@ checkpointer = SqliteSaver(conn=conn)
 
 graph = StateGraph(ChatState)
 graph.add_node("chat_node", chat_node)
+
+tools = ToolNode(tools=tools)
+graph.add_node("tools", tools)
+
 graph.add_edge(START, "chat_node")
+
+graph.add_conditional_edges("chat_node", tools_condition)
+
+graph.add_edge("tools", "chat_node")
+
 graph.add_edge("chat_node", END)
 
 chatbot = graph.compile(checkpointer=checkpointer)
